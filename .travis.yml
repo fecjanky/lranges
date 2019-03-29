@@ -1,0 +1,66 @@
+language: cpp
+
+addons:
+  apt:
+    sources:
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-trusty-6.0
+        - sourceline: 'ppa:george-edison55/cmake-3.x'
+    packages:
+        - g++-7
+        - gcc-7
+        - clang-6.0
+        - cmake
+
+matrix:
+  include:
+    - compiler: gcc
+      env:
+        - CC_USED=gcc-7
+        - CXX_USED=g++-7
+        - GCOV_USED=gcov-7
+        - CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=COVERAGE"
+      install:
+        - pip install --user urllib3[secure] cpp-coveralls
+      after_success:
+        - which $GCOV_USED
+        - coveralls --gcov $(which $GCOV_USED) --include header-only --gcov-options '\-lmpcu' --root .. --build-root .
+
+    - compiler: clang
+      env:
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Release
+
+    - compiler: clang-debug
+      env:
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=Debug
+    - compiler: clang-asan
+      sudo: true
+      env:
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=SANITIZE
+        - LSAN_OPTIONS=verbosity=1:log_threads=1
+    - compiler: clang-ubsan
+      sudo: true
+      env:
+        - CC_USED=clang-6.0
+        - CXX_USED=clang++-6.0
+        - CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=UBSAN
+  
+before_script:
+  - git submodule init
+  - git submodule update
+  - mkdir build
+  - cd build
+  - export CC=$CC_USED
+  - export CXX=$CXX_USED
+  - $CC --version
+  - $CXX --version
+  - cmake ../ $CMAKE_FLAGS
+
+script:
+- CTEST_OUTPUT_ON_FAILURE=TRUE make all test
