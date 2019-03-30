@@ -5,40 +5,69 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
 namespace transformed {
 
 template <typename T> struct TD;
 
 template <typename RangeT> struct Range : private RangeT {
 
-    Range(RangeT r)
+    Range()        = default;
+    Range(Range&)  = default;
+    Range(Range&&) = default;
+    Range& operator=(const Range&) = default;
+    Range& operator=(Range&&) = default;
+
+    explicit Range(RangeT r)
         : RangeT(std::move(r))
     {
     }
+
     using iterator = typename RangeT::iterator;
-    auto begin() { return static_cast<RangeT&>(*this).begin(); }
-    auto end() { return static_cast<RangeT&>(*this).end(); }
-    auto begin() const { return static_cast<const RangeT&>(*this).begin(); }
-    auto end() const { return static_cast<const RangeT&>(*this).end(); }
+
+    auto begin() { return range().begin(); }
+    auto end() { return range().end(); }
+    auto begin() const { return range().begin(); }
+    auto end() const { return range().end(); }
+
+private:
+    RangeT&       range() { return static_cast<RangeT&>(*this); }
+    const RangeT& range() const { return static_cast<const RangeT&>(*this); }
 };
 
 template <typename RangeT> struct Range<RangeT&> {
-    Range(RangeT& _r)
-        : r { _r }
+    Range()        = default;
+    Range(Range&)  = default;
+    Range(Range&&) = default;
+    Range& operator=(const Range&) = default;
+    Range& operator=(Range&&) = default;
+
+    explicit Range(RangeT& _r)
+        : r { &_r }
     {
     }
     using iterator = typename RangeT::iterator;
-    RangeT& r;
-    auto    begin() { return r.begin(); }
-    auto    end() { return r.end(); }
-    auto    begin() const { return r.begin(); }
-    auto    end() const { return r.end(); }
+    auto begin() { return r->begin(); }
+    auto end() { return r->end(); }
+    auto begin() const { return r->begin(); }
+    auto end() const { return r->end(); }
+
+private:
+    RangeT* r = nullptr;
 };
 
 template <typename RangeT, typename TransformationT> struct TransformationSequence {
 
     struct Iterator {
-        using iterator = typename RangeT::iterator;
+        using iterator          = typename RangeT::iterator;
+        using traits            = std::iterator_traits<iterator>;
+        using iterator_category = typename traits::iterator_category;
+        using difference_type   = typename traits::difference_type;
+        using value_type        = std::remove_reference_t<decltype(
+            std::declval<TransformationT>()(std::declval<typename traits::value_type>()))>;
+        using reference         = std::add_lvalue_reference_t<value_type>;
+        using pointer           = std::add_pointer_t<value_type>;
+
         Iterator(TransformationSequence& _seq, iterator _it)
             : seq { &_seq }
             , it { std::move(_it) }
@@ -46,8 +75,14 @@ template <typename RangeT, typename TransformationT> struct TransformationSequen
         }
         decltype(auto) operator*() { return seq->tf(*it); }
         void           operator++() { ++it; }
-        bool           operator==(const Iterator& rhs) const { return it == rhs.it; }
-        bool           operator!=(const Iterator& rhs) const { return !((*this) == rhs); }
+        Iterator       operator++(int)
+        {
+            auto temp = *this;
+            ++(*this);
+            return temp;
+        }
+        bool operator==(const Iterator& rhs) const { return it == rhs.it; }
+        bool operator!=(const Iterator& rhs) const { return !((*this) == rhs); }
 
         TransformationSequence* seq;
         iterator                it;
@@ -73,6 +108,15 @@ template <typename RangeT, typename FilterPredicate> struct FilteredSequence {
 
     struct Iterator {
         using iterator = typename RangeT::iterator;
+
+        using traits            = std::iterator_traits<iterator>;
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = typename traits::difference_type;
+        using value_type        = typename traits::value_type;
+        using difference_type   = typename traits::difference_type;
+        using reference         = typename traits::reference;
+        using pointer           = typename traits::pointer;
+
         Iterator(FilteredSequence& _seq, iterator _it)
             : seq { &_seq }
             , it { std::move(_it) }
@@ -84,6 +128,12 @@ template <typename RangeT, typename FilterPredicate> struct FilteredSequence {
         {
             ++it;
             next();
+        }
+        Iterator operator++(int)
+        {
+            auto temp = *this;
+            ++(*this);
+            return temp;
         }
         bool operator==(const Iterator& rhs) const { return it == rhs.it; }
         bool operator!=(const Iterator& rhs) const { return !((*this) == rhs); }

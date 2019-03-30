@@ -30,9 +30,9 @@ TEST_CASE("transform example", "[transform]")
     auto t = vec * [](auto val) { return val * val; } * [](auto val) { return val + 1; } %
         [](auto val) { return val % 5 == 0; } * [](auto val) { return val + 0.1; };
     std::vector<double> res;
-    for (auto v : t) {
-        res.push_back(v);
-    }
+
+    std::copy(t.begin(), t.end(), std::back_inserter(res));
+
     REQUIRE(res.size() == 2);
     REQUIRE(res[0] == 5.1);
     REQUIRE(res[1] == 10.1);
@@ -48,9 +48,8 @@ TEST_CASE("filter example", "[transform]")
     auto             t = vec % [](auto val) { return val >= 3; };
     std::vector<int> res;
 
-    for (auto v : t) {
-        res.push_back(v);
-    }
+    std::copy(t.begin(), t.end(), std::back_inserter(res));
+
     REQUIRE(res.size() == 4);
     REQUIRE(res[0] == 3);
     REQUIRE(res[1] == 4);
