@@ -224,14 +224,14 @@ template <typename FilterT> auto filter(FilterT tf) { return Filter<FilterT>(std
 template <typename RangeT, typename TransformationT>
 auto operator|(RangeT&& r, Transformation<TransformationT> tf)
 {
-    using range = Range<std::remove_reference_t<RangeT>>;
-    return TransformationSequence<std::remove_reference_t<RangeT>, TransformationT>(
-        range { std::forward<RangeT>(r) }, std::move(tf));
+    using range = Range<RangeT>;
+    return TransformationSequence<range, TransformationT>(
+        range(std::forward<RangeT>(r)), std::move(tf));
 }
 
 template <typename RangeT, typename FilterT> auto operator|(RangeT&& r, Filter<FilterT> tf)
 {
-    using range = Range<std::remove_reference_t<RangeT>>;
+    using range = Range<RangeT>;
     return FilteredSequence<range, FilterT>(range { std::forward<RangeT>(r) }, std::move(tf));
 }
 
