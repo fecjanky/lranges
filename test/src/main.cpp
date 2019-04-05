@@ -19,13 +19,8 @@ TEST_CASE("transform example", "[transform]")
 {
     std::vector<int> vec { 1, 2, 3, 4, 5, 6 };
 
-    using transformed::filter;
-    using transformed::transform;
-
-    transformed::Range<decltype(vec)&> r(vec);
-    r.begin();
-
-    transformed::Range<decltype(vec)> r2(vec);
+    using lranges::filter;
+    using lranges::transform;
 
     auto t = vec | transform([](auto val) { return val * val; })
         | transform([](auto val) { return val + 1; })
@@ -44,11 +39,33 @@ TEST_CASE("filter example", "[transform]")
 {
     std::vector<int> vec { 1, 2, 3, 4, 5, 6 };
 
-    using transformed::filter;
-    using transformed::transform;
+    using lranges::filter;
+    using lranges::transform;
 
     auto t = vec | transform([](auto val) { return val + 1; })
         | filter([](auto val) { return val >= 3; });
+    std::vector<int> res;
+    std::copy(t.begin(), t.end(), std::back_inserter(res));
+
+    REQUIRE(res.size() == 5);
+    REQUIRE(res[0] == 3);
+    REQUIRE(res[1] == 4);
+    REQUIRE(res[2] == 5);
+    REQUIRE(res[3] == 6);
+    REQUIRE(res[4] == 7);
+}
+
+int  plus_1(int val) { return val + 1; }
+bool greater_than_3(int val) { return val >= 3; }
+
+TEST_CASE("transform and filter by freestanding func", "[transform]")
+{
+    std::vector<int> vec { 1, 2, 3, 4, 5, 6 };
+
+    using lranges::filter;
+    using lranges::transform;
+
+    auto             t = vec | transform(plus_1) | filter(greater_than_3);
     std::vector<int> res;
     std::copy(t.begin(), t.end(), std::back_inserter(res));
 
