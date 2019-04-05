@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -149,7 +150,6 @@ namespace detail {
         using iterator_category   = std::forward_iterator_tag;
         using difference_type     = typename traits::difference_type;
         using value_type          = typename traits::value_type;
-        using difference_type     = typename traits::difference_type;
         using reference           = typename traits::reference;
         using pointer             = typename traits::pointer;
         using filtered_sequence_t = FilteredSequence<RangeT, FilterPredicate>;
@@ -186,7 +186,7 @@ namespace detail {
         }
     };
 
-    template <typename F> struct FuncWrapper : public F {
+    template <typename F, typename = void> struct FuncWrapper : public F {
         FuncWrapper() = default;
         FuncWrapper(F&& f)
             : F(std::move(f))
@@ -198,21 +198,38 @@ namespace detail {
         }
     };
 
-    template <typename R, typename... Args> struct FuncWrapper<R(Args...)> {
-        using signature = R(Args...);
+    template <typename R, typename Arg> struct FuncWrapper<R(Arg)> {
+        using signature = R(Arg);
         FuncWrapper()   = default;
         explicit FuncWrapper(signature func)
             : fptr { func }
         {
         }
 
-        template <typename... UArgs> R operator()(UArgs&&... args) const
+        template <typename UArg> R operator()(UArg&& arg) const
         {
-            return fptr(std::forward<UArgs>(args)...);
+            return fptr(std::forward<UArg>(arg));
         }
 
     private:
         signature* fptr = nullptr;
+    };
+
+    template <typename PMemFun>
+    struct FuncWrapper<PMemFun, std::enable_if_t<std::is_member_function_pointer<PMemFun>::value>> {
+        FuncWrapper() = default;
+        explicit FuncWrapper(PMemFun func)
+            : fptr { func }
+        {
+        }
+
+        template <typename UArg> decltype(auto) operator()(UArg&& arg) const
+        {
+            return (std::forward<UArg>(arg).*fptr)();
+        }
+
+    private:
+        PMemFun fptr = nullptr;
     };
 
     template <typename F> struct Transformation : public FuncWrapper<F> {

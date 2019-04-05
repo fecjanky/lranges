@@ -76,3 +76,33 @@ TEST_CASE("transform and filter by freestanding func", "[transform]")
     REQUIRE(res[3] == 6);
     REQUIRE(res[4] == 7);
 }
+
+TEST_CASE("transform and filter by freestanding ptr to mem", "[transform]")
+{
+    struct Foo {
+        Foo plus_1() const
+        {
+            auto temp = *this;
+            temp.val += 1;
+            return temp;
+        }
+        bool greater_than_3() const { return val >= 3; }
+        int  val = 0;
+    };
+
+    std::vector<Foo> vec { Foo { 1 }, Foo { 2 }, Foo { 3 }, Foo { 4 }, Foo { 5 }, Foo { 6 } };
+
+    using lranges::filter;
+    using lranges::transform;
+
+    auto             t = vec | transform(&Foo::plus_1) | filter(&Foo::greater_than_3);
+    std::vector<Foo> res;
+    std::copy(t.begin(), t.end(), std::back_inserter(res));
+
+    REQUIRE(res.size() == 5);
+    REQUIRE(res[0].val == 3);
+    REQUIRE(res[1].val == 4);
+    REQUIRE(res[2].val == 5);
+    REQUIRE(res[3].val == 6);
+    REQUIRE(res[4].val == 7);
+}
