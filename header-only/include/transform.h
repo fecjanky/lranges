@@ -58,25 +58,24 @@ private:
 
 template <typename RangeT, typename TransformationT> struct TransformationIterator;
 
-template <typename RangeT, typename TransformationT> struct TransformationSequence {
+template <typename RangeT, typename TransformationT>
+struct TransformationSequence : private RangeT, private TransformationT {
 
     using iterator = TransformationIterator<RangeT, TransformationT>;
 
     TransformationSequence(RangeT l, TransformationT r)
-        : range { std::move(l) }
-        , tf { std::move(r) }
+        : RangeT { std::move(l) }
+        , TransformationT { std::move(r) }
     {
     }
 
-    auto begin() { return iterator(*this, range.begin()); }
-    auto end() { return iterator(*this, range.end()); }
+    auto begin() { return iterator(*this, range().begin()); }
+    auto end() { return iterator(*this, range().end()); }
 
-    const TransformationT& transformation() const { return tf; }
-    TransformationT&       transformation() { return tf; }
-
-private:
-    RangeT          range;
-    TransformationT tf;
+    decltype(auto) transformation() { return static_cast<TransformationT&>(*this); }
+    decltype(auto) transformation() const { return static_cast<const TransformationT&>(*this); }
+    decltype(auto) range() { return static_cast<RangeT&>(*this); }
+    decltype(auto) range() const { return static_cast<const RangeT&>(*this); }
 };
 
 template <typename RangeT, typename TransformationT> struct TransformationIterator {
@@ -95,16 +94,16 @@ template <typename RangeT, typename TransformationT> struct TransformationIterat
         , it { std::move(_it) }
     {
     }
-    decltype(auto)         operator*() { return seq->transformation()(*it); }
-    void                   operator++() { ++it; }
-    TransformationIterator operator++(int)
+    decltype(auto) operator*() { return seq->transformation()(*it); }
+    void           operator++() { ++it; }
+    auto           operator++(int)
     {
         auto temp = *this;
         ++(*this);
         return temp;
     }
-    bool operator==(const TransformationIterator& rhs) const { return it == rhs.it; }
-    bool operator!=(const TransformationIterator& rhs) const { return !((*this) == rhs); }
+    auto operator==(const TransformationIterator& rhs) const { return it == rhs.it; }
+    auto operator!=(const TransformationIterator& rhs) const { return !((*this) == rhs); }
 
     sequence_t* seq;
     iterator    it;
@@ -124,26 +123,25 @@ auto operator<(TransformationIterator<R, T> const& lhs, TransformationIterator<R
 
 template <typename RangeT, typename FilterPredicate> struct FilterIterator;
 
-template <typename RangeT, typename FilterPredicate> struct FilteredSequence {
+template <typename RangeT, typename FilterPredicate>
+struct FilteredSequence : private RangeT, private FilterPredicate {
 
     using iterator = FilterIterator<RangeT, FilterPredicate>;
 
     FilteredSequence(RangeT l, FilterPredicate r)
-        : _range { std::move(l) }
-        , _filter { std::move(r) }
+        : RangeT { std::move(l) }
+        , FilterPredicate { std::move(r) }
     {
     }
 
-    auto                   begin() { return iterator(*this, _range.begin()); }
-    auto                   end() { return iterator(*this, _range.end()); }
-    FilterPredicate&       filter() { return _filter; }
-    const FilterPredicate& filter() const { return _filter; }
-    RangeT&                range() { return _range; }
-    const RangeT&          range() const { return _range; }
+    auto           begin() { return iterator(*this, range().begin()); }
+    auto           end() { return iterator(*this, range().end()); }
+    decltype(auto) filter() { return static_cast<FilterPredicate&>(*this); }
+    decltype(auto) filter() const { return static_cast<const FilterPredicate&>(*this); }
+    decltype(auto) range() { return static_cast<RangeT&>(*this); }
+    decltype(auto) range() const { return static_cast<const RangeT&>(*this); }
 
 private:
-    RangeT          _range;
-    FilterPredicate _filter;
 };
 
 template <typename RangeT, typename FilterPredicate> struct FilterIterator {
@@ -170,14 +168,14 @@ template <typename RangeT, typename FilterPredicate> struct FilterIterator {
         ++it;
         next();
     }
-    FilterIterator operator++(int)
+    auto operator++(int)
     {
         auto temp = *this;
         ++(*this);
         return temp;
     }
-    bool operator==(const FilterIterator& rhs) const { return it == rhs.it; }
-    bool operator!=(const FilterIterator& rhs) const { return !((*this) == rhs); }
+    auto operator==(const FilterIterator& rhs) const { return it == rhs.it; }
+    auto operator!=(const FilterIterator& rhs) const { return !((*this) == rhs); }
 
     filtered_sequence_t* seq;
     iterator             it;
