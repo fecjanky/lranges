@@ -79,14 +79,13 @@ TEST_CASE("transform and filter by freestanding func", "[transform]")
 
 TEST_CASE("transform and filter by freestanding ptr to mem", "[transform]")
 {
+    struct Baz {
+        int  val;
+        auto greater_than_3() const { return val >= 3; }
+    };
     struct Foo {
-        Foo plus_1() const
-        {
-            auto temp = *this;
-            temp.val += 1;
-            return temp;
-        }
-        bool greater_than_3() const { return val >= 3; }
+        auto toBaz() const { return Baz { val + 1 }; }
+        auto greater_than_3() const { return val >= 3; }
         int  val = 0;
     };
 
@@ -95,8 +94,12 @@ TEST_CASE("transform and filter by freestanding ptr to mem", "[transform]")
     using lranges::filter;
     using lranges::transform;
 
-    auto             t = vec | transform(&Foo::plus_1) | filter(&Foo::greater_than_3);
-    std::vector<Foo> res;
+    auto t         = vec | transform(&Foo::toBaz) | filter(&Baz::greater_than_3);
+    using iterator = decltype(t.begin());
+    using deref    = decltype(*t.begin());
+    static_assert(std::is_same<iterator::value_type, Baz>::value, "Oh no...");
+    static_assert(std::is_same<deref, Baz>::value, "Oh no...");
+    std::vector<Baz> res;
     std::copy(t.begin(), t.end(), std::back_inserter(res));
 
     REQUIRE(res.size() == 5);

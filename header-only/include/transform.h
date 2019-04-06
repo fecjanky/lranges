@@ -58,11 +58,11 @@ namespace detail {
     template <typename RangeT, typename TransformationT> struct TransformationIterator;
 
     template <typename RangeT, typename TransformationT>
-    struct TransformationSequence : private RangeT, private TransformationT {
+    struct TransformedRange : private RangeT, private TransformationT {
 
         using iterator = TransformationIterator<RangeT, TransformationT>;
 
-        TransformationSequence(RangeT l, TransformationT r)
+        TransformedRange(RangeT l, TransformationT r)
             : RangeT { std::move(l) }
             , TransformationT { std::move(r) }
         {
@@ -86,7 +86,7 @@ namespace detail {
             std::declval<TransformationT>()(std::declval<typename traits::value_type>()))>;
         using reference         = std::add_lvalue_reference_t<value_type>;
         using pointer           = std::add_pointer_t<value_type>;
-        using sequence_t        = TransformationSequence<RangeT, TransformationT>;
+        using sequence_t        = TransformedRange<RangeT, TransformationT>;
 
         TransformationIterator(sequence_t& _seq, iterator _it)
             : seq { &_seq }
@@ -108,6 +108,7 @@ namespace detail {
         iterator    it;
     };
 
+    // TODO(fecjanky):add remaining iterator operators
     template <typename R, typename T>
     auto operator-(TransformationIterator<R, T> const& lhs, TransformationIterator<R, T> const& rhs)
     {
@@ -123,11 +124,11 @@ namespace detail {
     template <typename RangeT, typename FilterPredicate> struct FilterIterator;
 
     template <typename RangeT, typename FilterPredicate>
-    struct FilteredSequence : private RangeT, private FilterPredicate {
+    struct FilteredRange : private RangeT, private FilterPredicate {
 
         using iterator = FilterIterator<RangeT, FilterPredicate>;
 
-        FilteredSequence(RangeT l, FilterPredicate r)
+        FilteredRange(RangeT l, FilterPredicate r)
             : RangeT { std::move(l) }
             , FilterPredicate { std::move(r) }
         {
@@ -152,7 +153,7 @@ namespace detail {
         using value_type          = typename traits::value_type;
         using reference           = typename traits::reference;
         using pointer             = typename traits::pointer;
-        using filtered_sequence_t = FilteredSequence<RangeT, FilterPredicate>;
+        using filtered_sequence_t = FilteredRange<RangeT, FilterPredicate>;
 
         FilterIterator(filtered_sequence_t& _seq, iterator _it)
             : seq { &_seq }
@@ -245,7 +246,7 @@ namespace detail {
     {
         using range          = Range<RangeT>;
         using transformation = decltype(tf);
-        return TransformationSequence<range, transformation>(
+        return TransformedRange<range, transformation>(
             range(std::forward<RangeT>(r)), std::move(tf));
     }
 
@@ -253,7 +254,7 @@ namespace detail {
     {
         using range          = Range<RangeT>;
         using transformation = decltype(tf);
-        return FilteredSequence<range, transformation>(
+        return FilteredRange<range, transformation>(
             range { std::forward<RangeT>(r) }, std::move(tf));
     }
 }
