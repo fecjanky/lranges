@@ -106,3 +106,35 @@ TEST_CASE("transform and filter by freestanding ptr to mem", "[transform]")
     REQUIRE(res[3].val == 6);
     REQUIRE(res[4].val == 7);
 }
+
+#include <array>
+
+struct isEven {
+    bool operator()(int val) const { return val % 2 == 0; }
+};
+
+struct Mul {
+    int operator()(int val) const { return val * 2 + 1; }
+};
+
+std::array<int, 4> func_lranges(std::array<int, 4>& a)
+{
+    using lranges::filter;
+    using lranges::transform;
+    std::array<int, 4> arr_out;
+    arr_out.fill(0);
+    auto out = arr_out.begin();
+    auto t   = a | filter(isEven {}) | transform(Mul {});
+    for (auto it = t.begin(), end = t.end(); it != end; ++it, ++out) {
+        *out = *it;
+    }
+    return arr_out;
+}
+
+TEST_CASE("Sample")
+{
+    std::array<int, 4> arr { 1, 2, 3, 4 };
+    auto               res = func_lranges(arr);
+    REQUIRE(res[0] == 5);
+    REQUIRE(res[1] == 9);
+}

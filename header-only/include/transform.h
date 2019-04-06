@@ -181,7 +181,7 @@ namespace detail {
     private:
         void next()
         {
-            for (; it != seq->range().end() && !seq->filter()(*it); ++it)
+            for (auto end = seq->range().end(); it != end && !seq->filter()(*it); ++it)
                 ;
         }
     };
