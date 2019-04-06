@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <iterator>
 #include <type_traits>
 #include <utility>
@@ -180,11 +181,7 @@ namespace detail {
         iterator             it;
 
     private:
-        void next()
-        {
-            for (auto end = seq->range().end(); it != end && !seq->filter()(*it); ++it)
-                ;
-        }
+        void next() { it = std::find_if(it, seq->range().end(), seq->filter()); }
     };
 
     template <typename F, typename = void> struct FuncWrapper : public F {
