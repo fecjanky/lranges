@@ -6,14 +6,12 @@ project(unit_test CXX)
 
 set(SRC
         src/main.cpp
+        src/test_iterators.cpp
 )
 
 
 add_executable(sample_test  ${SRC})
 
-if(CMAKE_BUILD_TYPE STREQUAL "COVERAGE")
-	target_compile_definitions(sample_test PRIVATE POLY_VECTOR_COVERAGE_BUILD)
-endif()
 
 target_link_libraries(sample_test Transform Catch_lib)
 set_target_properties(sample_test PROPERTIES LINKER_LANGUAGE CXX)

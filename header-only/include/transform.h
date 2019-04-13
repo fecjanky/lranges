@@ -94,32 +94,87 @@ namespace detail {
             , it { std::move(_it) }
         {
         }
+
+        /*Iterator API (Input, Forward)*/
         decltype(auto) operator*() { return seq->transformation()(*it); }
-        void           operator++() { ++it; }
-        auto           operator++(int)
+        decltype(auto) operator*() const { return seq->transformation()(*it); }
+        auto           operator==(const TransformationIterator& rhs) const { return it == rhs.it; }
+        auto operator!=(const TransformationIterator& rhs) const { return !((*this) == rhs); }
+
+        decltype(auto) operator++()
+        {
+            ++it;
+            return *this;
+        }
+        auto operator++(int)
         {
             auto temp = *this;
             ++(*this);
             return temp;
         }
-        auto operator==(const TransformationIterator& rhs) const { return it == rhs.it; }
-        auto operator!=(const TransformationIterator& rhs) const { return !((*this) == rhs); }
+
+        /*Bi-directional iterator API*/
+        decltype(auto) operator--()
+        {
+            --it;
+            return *this;
+        }
+        auto operator--(int)
+        {
+            auto temp = *this;
+            --(*this);
+            return temp;
+        }
+
+        /*Random-access API*/
+        decltype(auto) operator+=(difference_type n)
+        {
+            it += n;
+            return *this;
+        }
+        decltype(auto) operator-=(difference_type n)
+        {
+            it -= n;
+            return *this;
+        }
+        decltype(auto) operator[](difference_type n) { return seq->transformation()(it[n]); }
+        decltype(auto) operator[](difference_type n) const { return seq->transformation()(it[n]); }
+        auto           operator-(const TransformationIterator& rhs) const { return it - rhs.it; }
+        auto           operator<(const TransformationIterator& rhs) const { return it < rhs.it; }
+        auto           operator<=(const TransformationIterator& rhs) const { return it <= rhs.it; }
+        auto           operator>(const TransformationIterator& rhs) const { return it > rhs.it; }
+        auto           operator>=(const TransformationIterator& rhs) const { return it >= rhs.it; }
 
         sequence_t* seq;
         iterator    it;
     };
 
-    // TODO(fecjanky):add remaining iterator operators
+    /*Random-access API*/
     template <typename R, typename T>
-    auto operator-(TransformationIterator<R, T> const& lhs, TransformationIterator<R, T> const& rhs)
+    auto operator-(TransformationIterator<R, T> const&         it,
+        typename TransformationIterator<R, T>::difference_type n)
     {
-        return lhs.it - rhs.it;
+        auto temp = it;
+        temp -= n;
+        return temp;
     }
 
     template <typename R, typename T>
-    auto operator<(TransformationIterator<R, T> const& lhs, TransformationIterator<R, T> const& rhs)
+    auto operator+(TransformationIterator<R, T> const&         it,
+        typename TransformationIterator<R, T>::difference_type n)
     {
-        return lhs.it < rhs.it;
+        auto temp = it;
+        temp += n;
+        return temp;
+    }
+
+    template <typename R, typename T>
+    auto operator+(typename TransformationIterator<R, T>::difference_type n,
+        TransformationIterator<R, T> const&                               it)
+    {
+        auto temp = it;
+        temp += n;
+        return temp;
     }
 
     template <typename RangeT, typename FilterPredicate> struct FilterIterator;
@@ -145,11 +200,38 @@ namespace detail {
     private:
     };
 
+    template <size_t I, typename T, typename... Ts> struct index_of;
+
+    template <size_t I, typename T, typename... Rest> struct index_of<I, T, T, Rest...> {
+        static constexpr auto value = I;
+    };
+
+    template <size_t I, typename T, typename First, typename... Rest>
+    struct index_of<I, T, First, Rest...> {
+        static constexpr auto value = index_of<I + 1, T, Rest...>::value;
+    };
+
+    template <typename... Categories> struct Ordered {
+        template <typename T1, typename T2> struct min {
+            static constexpr auto t1_idx = index_of<0, T1, Categories...>::value;
+            static constexpr auto t2_idx = index_of<0, T2, Categories...>::value;
+            using type = std::conditional_t < t1_idx<t2_idx && !(t2_idx < t1_idx), T1, T2>;
+        };
+    };
+
+    using iterator_ordering = Ordered<std::input_iterator_tag, std::forward_iterator_tag,
+        std::bidirectional_iterator_tag, std::random_access_iterator_tag>;
+
+    template <typename T1, typename T2>
+    using iterator_min_t = typename iterator_ordering::min<T1, T2>::type;
+
     template <typename RangeT, typename FilterPredicate> struct FilterIterator {
         using iterator = typename RangeT::iterator;
 
-        using traits              = std::iterator_traits<iterator>;
-        using iterator_category   = std::forward_iterator_tag;
+        using traits = std::iterator_traits<iterator>;
+
+        using iterator_category
+            = iterator_min_t<typename traits::iterator_category, std::bidirectional_iterator_tag>;
         using difference_type     = typename traits::difference_type;
         using value_type          = typename traits::value_type;
         using reference           = typename traits::reference;
@@ -162,8 +244,15 @@ namespace detail {
         {
             next();
         }
+
+        /*Iterator API (Input, Forward)*/
+
         decltype(auto) operator*() { return *it; }
-        void           operator++()
+        decltype(auto) operator*() const { return *it; }
+        auto           operator==(const FilterIterator& rhs) const { return it == rhs.it; }
+        auto           operator!=(const FilterIterator& rhs) const { return !((*this) == rhs); }
+
+        void operator++()
         {
             ++it;
             next();
@@ -174,8 +263,19 @@ namespace detail {
             ++(*this);
             return temp;
         }
-        auto operator==(const FilterIterator& rhs) const { return it == rhs.it; }
-        auto operator!=(const FilterIterator& rhs) const { return !((*this) == rhs); }
+
+        /*Bi-directional iterator API*/
+        decltype(auto) operator--()
+        {
+            --it;
+            return *this;
+        }
+        auto operator--(int)
+        {
+            auto temp = *this;
+            --(*this);
+            return temp;
+        }
 
         filtered_sequence_t* seq;
         iterator             it;
@@ -265,6 +365,28 @@ template <typename TransformationT> auto transform(TransformationT&& tf)
 template <typename FilterT> auto filter(FilterT&& tf)
 {
     return detail::Filter<std::remove_reference_t<FilterT>>(std::forward<FilterT>(tf));
+}
+
+template <typename Iterator> struct iterator_range {
+
+    using iterator = Iterator;
+
+    iterator_range(Iterator begin, Iterator end)
+        : _begin { begin }
+        , _end { end }
+    {
+    }
+
+    auto begin() const { return _begin; }
+    auto end() const { return _end; }
+
+    Iterator _begin;
+    Iterator _end;
+};
+
+template <typename Iterator> auto make_iterator_range(Iterator b, Iterator e)
+{
+    return iterator_range<Iterator>(std::move(b), std::move(e));
 }
 
 }
