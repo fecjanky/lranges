@@ -200,7 +200,10 @@ namespace detail {
     private:
     };
 
-    template <size_t I, typename T, typename... Ts> struct index_of;
+    template <size_t I, typename T, typename... Ts> struct index_of {
+        template <typename T> struct TYPE_MISSING_FROM_SEQUENCE_ERROR;
+        static constexpr auto value = TYPE_MISSING_FROM_SEQUENCE_ERROR<T>::value;
+    };
 
     template <size_t I, typename T, typename... Rest> struct index_of<I, T, T, Rest...> {
         static constexpr auto value = I;
@@ -213,8 +216,11 @@ namespace detail {
 
     template <typename... Categories> struct Ordered {
         template <typename T1, typename T2> struct min {
+        private:
             static constexpr auto t1_idx = index_of<0, T1, Categories...>::value;
             static constexpr auto t2_idx = index_of<0, T2, Categories...>::value;
+
+        public:
             using type = std::conditional_t < t1_idx<t2_idx && !(t2_idx < t1_idx), T1, T2>;
         };
     };
