@@ -13,7 +13,7 @@ set(SRC
 add_executable(sample_test  ${SRC})
 
 
-target_link_libraries(sample_test Transform Catch_lib)
+target_link_libraries(sample_test LRanges Catch_lib)
 set_target_properties(sample_test PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET sample_test PROPERTY CXX_STANDARD 14)
 

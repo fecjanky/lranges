@@ -1,19 +1,11 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <headeronly.h>
-#include <transform.h>
+#include <lranges.h>
 
 #include <iostream>
 #include <sstream>
 #include <vector>
-
-TEST_CASE("test hello", "[hello]")
-{
-    std::stringstream ss;
-    Sample::hello(ss, 4);
-    REQUIRE(ss.str() == "Hello with value:4\n");
-}
 
 TEST_CASE("transform example", "[transform]")
 {
