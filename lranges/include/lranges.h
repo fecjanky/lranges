@@ -201,7 +201,7 @@ namespace detail {
     };
 
     template <size_t I, typename T, typename... Ts> struct index_of {
-        template <typename T> struct TYPE_MISSING_FROM_SEQUENCE_ERROR;
+        template <typename U> struct TYPE_MISSING_FROM_SEQUENCE_ERROR;
         static constexpr auto value = TYPE_MISSING_FROM_SEQUENCE_ERROR<T>::value;
     };
 

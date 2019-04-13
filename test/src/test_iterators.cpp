@@ -17,8 +17,8 @@ TEST_CASE("Transform iterator on input iterator", "[transform][iterator][input]"
 
     auto upper = make_iterator_range(begin, end) | transform(toupper);
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(begin)>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(begin)>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -40,8 +40,8 @@ TEST_CASE("Transform iterator on forward iterator", "[transform][iterator][forwa
 
     auto upper = list | transform(toupper);
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(list)::iterator>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(list)::iterator>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -76,8 +76,8 @@ TEST_CASE("Transform iterator on bidirectional iterator", "[transform][iterator]
 
     auto upper = list | transform(toupper);
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(list)::iterator>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(list)::iterator>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -119,8 +119,8 @@ TEST_CASE("Transform iterator on random access iterator", "[transform][iterator]
 
     auto upper = list | transform(toupper);
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(list)::iterator>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(list)::iterator>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -179,8 +179,8 @@ TEST_CASE("Transform iterator on random access iterator multi-stage",
 
     auto upper = list | transform(toupper) | transform([](char c) { return ++c; });
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(list)::iterator>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(list)::iterator>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -239,8 +239,8 @@ TEST_CASE("Filter drops to bidir iterator category", "[filter][iterator][random-
     auto upper = list | transform(toupper) | filter([](char c) { return c > 'A'; })
         | transform([](char c) { return ++c; });
 
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::bidirectional_iterator_tag>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::bidirectional_iterator_tag>::value,
         "drops to forward iterator category");
 
     auto t_begin = upper.begin();
@@ -255,6 +255,8 @@ TEST_CASE("Filter drops to bidir iterator category", "[filter][iterator][random-
     REQUIRE(t_begin == t_end);
     REQUIRE(*t_temp_D-- == 'D');
     REQUIRE(*t_temp_D == 'C');
+    ++t_temp_D;
+    REQUIRE(*t_temp_D-- == 'D');
     --t_begin;
     REQUIRE(*t_begin == 'D');
     ++t_begin;
@@ -265,6 +267,32 @@ TEST_CASE("Filter drops to bidir iterator category", "[filter][iterator][random-
     REQUIRE(multi_pass.size() == 2);
     REQUIRE(multi_pass[0] == 'C');
     REQUIRE(multi_pass[1] == 'D');
+}
+
+TEST_CASE("Filter iterator post-fix decrement",
+    "[filter][iterator][API]")
+{
+    std::list<int>          iss{'a','b', 'c'};
+    using namespace lranges;
+
+    auto upper = make_iterator_range(iss.begin(), iss.end()) | filter([](char c) { return c > 'a'; });
+
+    using t = std::iterator_traits<decltype(upper.begin())>::iterator_category;
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::bidirectional_iterator_tag>::value,
+        "keeps iterator category");
+
+    auto t_begin = upper.begin();
+    auto t_end   = upper.end();
+    REQUIRE(t_begin != t_end);
+    REQUIRE(t_begin == t_begin);
+    REQUIRE(*t_begin == 'b');
+    ++t_begin;
+    REQUIRE(*t_begin-- == 'c');
+    REQUIRE(*t_begin == 'b');
+    ++t_begin;
+    REQUIRE(*t_begin++ == 'c');
+    REQUIRE(t_begin == t_end);
 }
 
 TEST_CASE("Filter iterator keeps iterator category of the iterator up until bi-dir",
@@ -279,8 +307,8 @@ TEST_CASE("Filter iterator keeps iterator category of the iterator up until bi-d
         | filter([](char c) { return c > 'A'; });
 
     using t = std::iterator_traits<decltype(upper.begin())>::iterator_category;
-    static_assert(std::is_same_v<std::iterator_traits<decltype(upper.begin())>::iterator_category,
-                      std::iterator_traits<decltype(begin)>::iterator_category>,
+    static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
+                      std::iterator_traits<decltype(begin)>::iterator_category>::value,
         "keeps iterator category");
 
     auto t_begin = upper.begin();
@@ -297,8 +325,8 @@ TEST_CASE("min on ordered types", "[meta]")
 {
     using namespace lranges;
     using order = detail::Ordered<char, int, double>;
-    static_assert(std::is_same_v<order::min<char, char>::type, char>, "min: char,char -> char");
-    static_assert(std::is_same_v<order::min<char, int>::type, char>, "min: char,int -> char");
-    static_assert(std::is_same_v<order::min<int, char>::type, char>, "min: int,char -> char");
-    static_assert(std::is_same_v<order::min<double, int>::type, int>, "min: double,int -> int");
+    static_assert(std::is_same<order::min<char, char>::type, char>::value, "min: char,char -> char");
+    static_assert(std::is_same<order::min<char, int>::type, char>::value, "min: char,int -> char");
+    static_assert(std::is_same<order::min<int, char>::type, char>::value, "min: int,char -> char");
+    static_assert(std::is_same<order::min<double, int>::type, int>::value, "min: double,int -> int");
 }
