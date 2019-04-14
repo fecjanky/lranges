@@ -246,6 +246,7 @@ struct TransformationIterator
     using my_base    = random_access_iterator_api<TransformationIterator<RangeT, TransformationT>,
         typename RangeT::iterator>;
     using iterator   = typename RangeT::iterator;
+    using traits     = std::iterator_traits<iterator>;
     using value_type = std::remove_reference_t<decltype(
         std::declval<TransformationT>()(std::declval<typename traits::value_type>()))>;
     using reference  = std::add_lvalue_reference_t<value_type>;
