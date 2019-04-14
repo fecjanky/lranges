@@ -6,4 +6,6 @@ ColumnLimit: 100
 BinPackArguments: 'true'
 BinPackParameters: 'true'
 BreakBeforeTernaryOperators: 'true'
+NamespaceIndentation : None
+FixNamespaceComments : 'true'
 ...

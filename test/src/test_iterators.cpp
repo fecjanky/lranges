@@ -233,7 +233,7 @@ TEST_CASE("Transform iterator on random access iterator multi-stage",
 
 TEST_CASE("Filter drops to bidir iterator category", "[filter][iterator][random-access]")
 {
-    std::vector<char> list { 'a', 'b', 'c' };
+    std::vector<char> list { 'a', 'b', 'a', 'c' };
     using namespace lranges;
 
     auto upper = list | transform(toupper) | filter([](char c) { return c > 'A'; })
@@ -269,13 +269,13 @@ TEST_CASE("Filter drops to bidir iterator category", "[filter][iterator][random-
     REQUIRE(multi_pass[1] == 'D');
 }
 
-TEST_CASE("Filter iterator post-fix decrement",
-    "[filter][iterator][API]")
+TEST_CASE("Filter iterator post-fix decrement", "[filter][iterator][API]")
 {
-    std::list<int>          iss{'a','b', 'c'};
+    std::list<int> iss { 'a', 'b', 'c' };
     using namespace lranges;
 
-    auto upper = make_iterator_range(iss.begin(), iss.end()) | filter([](char c) { return c > 'a'; });
+    auto upper
+        = make_iterator_range(iss.begin(), iss.end()) | filter([](char c) { return c > 'a'; });
 
     using t = std::iterator_traits<decltype(upper.begin())>::iterator_category;
     static_assert(std::is_same<std::iterator_traits<decltype(upper.begin())>::iterator_category,
@@ -324,9 +324,11 @@ TEST_CASE("Filter iterator keeps iterator category of the iterator up until bi-d
 TEST_CASE("min on ordered types", "[meta]")
 {
     using namespace lranges;
-    using order = detail::Ordered<char, int, double>;
-    static_assert(std::is_same<order::min<char, char>::type, char>::value, "min: char,char -> char");
-    static_assert(std::is_same<order::min<char, int>::type, char>::value, "min: char,int -> char");
-    static_assert(std::is_same<order::min<int, char>::type, char>::value, "min: int,char -> char");
-    static_assert(std::is_same<order::min<double, int>::type, int>::value, "min: double,int -> int");
+    using order = detail::meta::Ordered<char, int, double>;
+    static_assert(
+        std::is_same<order::min<char, char>::type, char>::value, "min: char,char -> char ");
+    static_assert(std::is_same<order::min<char, int>::type, char>::value, "min : char, int->char ");
+    static_assert(std::is_same<order::min<int, char>::type, char>::value, "min : int,char -> char");
+    static_assert(
+        std::is_same<order::min<double, int>::type, int>::value, "min: double,int -> int");
 }
