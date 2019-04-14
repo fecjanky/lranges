@@ -335,10 +335,10 @@ struct FilterIterator : public bidir_iterator_api<FilterIterator<RangeT, FilterP
     filtered_sequence_t* seq;
 
 private:
-    void next() { it = std::find_if(it, seq->range().end(), seq->filter()); }
+    void next() { this->it = std::find_if(this->it, seq->range().end(), seq->filter()); }
     void prev()
     {
-        for (; it != seq->range().begin() && !seq->filter()(*it); --it)
+        for (; this->it != seq->range().begin() && !seq->filter()(*this->it); --this->it)
             ;
     }
 };
